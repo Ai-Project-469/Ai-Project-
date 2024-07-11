@@ -5,9 +5,8 @@ import sys
 import math
 import pygame.gfxdraw
 
-# Constants
 BLUE = (80, 50, 150)
-BLACK = (150, 255, 255)
+PURPLE = (150, 255, 255)
 NUM_ROWS = 6
 NUM_COLUMNS = 7
 
@@ -169,33 +168,39 @@ def choose_best_move(board, piece):
     return best_col
 
 def render_board(board, screen, player_logo, ai_logo, background, game_rect, height):
-    screen.blit(background, (0, 0))
+    background = pygame.transform.scale(background, screen.get_size())
+
+    screen.blit(background, (0, 0)) 
+
     for c in range(NUM_COLUMNS):
         for r in range(NUM_ROWS):
             pygame.draw.rect(screen, BLUE, (game_rect.x + c * SQUARESIZE, game_rect.y + r * SQUARESIZE + SQUARESIZE, SQUARESIZE, SQUARESIZE))
-            pygame.gfxdraw.aacircle(screen, game_rect.x + int(c * SQUARESIZE + SQUARESIZE / 2), game_rect.y + int(r * SQUARESIZE + SQUARESIZE + SQUARESIZE / 2), RADIUS, BLACK)
-            pygame.gfxdraw.filled_circle(screen, game_rect.x + int(c * SQUARESIZE + SQUARESIZE / 2), game_rect.y + int(r * SQUARESIZE + SQUARESIZE + SQUARESIZE / 2), RADIUS, BLACK)
+            pygame.gfxdraw.aacircle(screen, game_rect.x + int(c * SQUARESIZE + SQUARESIZE / 2), game_rect.y + int(r * SQUARESIZE + SQUARESIZE + SQUARESIZE / 2), RADIUS, PURPLE)
+            pygame.gfxdraw.filled_circle(screen, game_rect.x + int(c * SQUARESIZE + SQUARESIZE / 2), game_rect.y + int(r * SQUARESIZE + SQUARESIZE + SQUARESIZE / 2), RADIUS, PURPLE)
+
     for c in range(NUM_COLUMNS):
         for r in range(NUM_ROWS):
             if board[r][c] == HUMAN_PIECE:
                 screen.blit(player_logo, (game_rect.x + c * SQUARESIZE + 5, game_rect.y + height - (r * SQUARESIZE + SQUARESIZE) + 5))
             elif board[r][c] == COMPUTER_PIECE:
                 screen.blit(ai_logo, (game_rect.x + c * SQUARESIZE + 5, game_rect.y + height - (r * SQUARESIZE + SQUARESIZE) + 5))
-    pygame.display.update()
+
+    pygame.display.flip()
+
 
 def display_winner(screen, text, window_size):
     myfont = pygame.font.SysFont("Comic Sans MS", 75, bold=True)
     label = myfont.render(text, 1, (255, 0, 0))
     label_rect = label.get_rect(center=(window_size[0] // 2, window_size[1] // 8))
     screen.blit(label, label_rect)
-    pygame.display.update()
+    pygame.display.flip()
 
 def main():
     global SQUARESIZE, RADIUS
 
     pygame.init()
 
-    screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+    screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE | pygame.DOUBLEBUF)
     window_size = screen.get_size()
 
     SQUARESIZE = window_size[1] // (NUM_ROWS + 1)
@@ -209,8 +214,8 @@ def main():
         ai_logo = pygame.image.load("images/ai_logo.png")
         background = pygame.image.load("images/background.png")
     except pygame.error as e:
-        print(f"Error loading images: {e}")
-        sys.exit()
+        print(f"Error loading image: {e}")
+        sys.exit(1)
 
     background = pygame.transform.scale(background, window_size)
     player_logo = pygame.transform.scale(player_logo, (SQUARESIZE - 10, SQUARESIZE - 10))
@@ -224,7 +229,7 @@ def main():
     game_rect = pygame.Rect((window_size[0] - width) // 2, (window_size[1] - height) // 2, width, height)
 
     render_board(board, screen, player_logo, ai_logo, background, game_rect, height)
-    pygame.display.update()
+    pygame.display.flip()
 
     turn = random.randint(PLAYER, AI)
 
@@ -234,7 +239,7 @@ def main():
                 sys.exit()
             if event.type == pygame.VIDEORESIZE:
                 window_size = event.size
-                screen = pygame.display.set_mode(window_size, pygame.RESIZABLE)
+                screen = pygame.display.set_mode(window_size, pygame.RESIZABLE | pygame.DOUBLEBUF)
                 SQUARESIZE = window_size[1] // (NUM_ROWS + 1)
                 width = NUM_COLUMNS * SQUARESIZE
                 height = (NUM_ROWS + 1) * SQUARESIZE
@@ -251,9 +256,9 @@ def main():
                 if turn == PLAYER:
                     if 0 <= posx <= width:
                         screen.blit(player_logo, (game_rect.x + posx - player_logo.get_width() // 2, game_rect.y + int(SQUARESIZE / 2 - player_logo.get_height() / 2)))
-                pygame.display.update()
+                pygame.display.flip()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                screen.blit(background, (0, 0))
+                posx = event.pos[0] - game_rect.x
                 render_board(board, screen, player_logo, ai_logo, background, game_rect, height)
                 if turn == PLAYER:
                     posx = event.pos[0] - game_rect.x
@@ -268,7 +273,7 @@ def main():
                         display_board(board)
                         render_board(board, screen, player_logo, ai_logo, background, game_rect, height)
         if turn == AI and not game_over:
-            col, minimax_score = minimax(board, 7, -math.inf, math.inf, True)
+            col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
             if is_valid_column(board, col):
                 row = find_next_open_row(board, col)
                 place_piece(board, row, col, COMPUTER_PIECE)
